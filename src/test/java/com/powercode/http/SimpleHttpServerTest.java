@@ -1,7 +1,6 @@
 package com.powercode.http;
 
 import com.powercode.http.exception.PortInUseException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -13,25 +12,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SimpleHttpServerTest {
 
-    SimpleHttpServer serverUnderTest;
-
-    @BeforeEach
-    void initialize() {
-        serverUnderTest = new SimpleHttpServer();
-    }
+    final int testPort = 8084;
 
     @Test
     void shouldCreateServerSocketIfNotPassed() throws PortInUseException {
-        ServerSocket socket = serverUnderTest.createServerSocket(null);
+        ServerSocket socket = SimpleHttpServer.createServerSocket(null);
         assertFalse(socket.equals(null));
         cleanup(socket);
     }
 
     @Test
     void shouldCreateServerSocketWithPort() throws PortInUseException {
-        final int testPort = 8084;
-
-        ServerSocket socket = serverUnderTest.createServerSocket(testPort);
+        ServerSocket socket = SimpleHttpServer.createServerSocket(testPort);
         assertFalse(socket.equals(null));
         assertTrue(socket.getLocalPort() == testPort);
         cleanup(socket);
@@ -39,11 +31,18 @@ class SimpleHttpServerTest {
 
     @Test
     void shouldThrowExceptionIfSocketAlreadyExists() throws PortInUseException {
-        final int testPort = 8084;
-        ServerSocket socket = serverUnderTest.createServerSocket(testPort);
+        ServerSocket socket = SimpleHttpServer.createServerSocket(testPort);
         assertFalse(socket.equals(null));
-        assertThrows(PortInUseException.class, () -> serverUnderTest.createServerSocket(testPort));
+        assertThrows(PortInUseException.class, () -> SimpleHttpServer.createServerSocket(testPort));
         cleanup(socket);
+    }
+
+    @Test
+    void shouldCloseSocket() throws PortInUseException {
+        ServerSocket socket = SimpleHttpServer.createServerSocket(testPort);
+        assertFalse(socket.isClosed());
+        SimpleHttpServer.closeServerSocket(socket);
+        assertTrue(socket.isClosed());
     }
 
     void cleanup(ServerSocket socket) {
