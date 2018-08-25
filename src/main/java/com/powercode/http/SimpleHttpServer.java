@@ -2,8 +2,14 @@ package com.powercode.http;
 
 import com.powercode.http.exception.PortInUseException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.Optional;
 import org.slf4j.*;
 
@@ -26,7 +32,29 @@ public class SimpleHttpServer {
             logger.error("Closing server...");
             return;
         }
-        closeServerSocket(socket);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> closeServerSocket(socket)));
+
+        while (true) {
+            try (final Socket client = socket.accept()) {
+                logger.info("Request incoming...");
+                InputStreamReader clientInputStream = new InputStreamReader(client.getInputStream());
+                BufferedReader reader = new BufferedReader(clientInputStream);
+                String line = reader.readLine();
+                while (!line.isEmpty()) {
+                    logger.debug(line);
+                    line = reader.readLine();
+                }
+
+                String httpResponse = "HTTP/1.1 200 OK\r\n\r\n" + new Date();
+                logger.info("Sending response...");
+                logger.debug("Response: \n{}\n", httpResponse);
+                client.getOutputStream().write(httpResponse.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException | NullPointerException e) {
+                logger.debug("Unexpected error occurred while handling request");
+            }
+        }
+
     }
 
     public static ServerSocket createServerSocket(Integer port) throws PortInUseException {
